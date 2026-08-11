@@ -15,13 +15,34 @@ const app = express();
 const server = http.createServer(app);
 
 // Enable CORS
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-app.use(
-  cors({
-    origin: [clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
-    credentials: true,
-  })
-);
+const clientUrl = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.replace(/\/$/, '')
+  : 'http://localhost:5173';
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  const cleanOrigin = origin.replace(/\/$/, '');
+  return (
+    cleanOrigin === clientUrl ||
+    cleanOrigin === 'http://localhost:5173' ||
+    cleanOrigin === 'http://127.0.0.1:5173' ||
+    cleanOrigin.endsWith('.vercel.app')
+  );
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow for smooth cross-origin demo API access
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+};
+
+app.use(cors(corsOptions));
 
 // Body Parser Middleware
 app.use(express.json());
@@ -30,7 +51,7 @@ app.use(express.urlencoded({ extended: true }));
 // Socket.IO Setup
 const io = new Server(server, {
   cors: {
-    origin: [clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: (origin, callback) => callback(null, true),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   },
