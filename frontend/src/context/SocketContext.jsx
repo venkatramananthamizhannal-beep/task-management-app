@@ -11,11 +11,15 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      const serverUrl = window.location.origin.includes('5173')
-        ? 'http://localhost:5000'
-        : window.location.origin;
+      const socketUrl =
+        import.meta.env.VITE_SOCKET_URL ||
+        (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.startsWith('http')
+          ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+          : window.location.origin.includes('5173')
+          ? 'http://localhost:5000'
+          : window.location.origin);
 
-      const newSocket = io(serverUrl, {
+      const newSocket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         reconnection: true,
       });
